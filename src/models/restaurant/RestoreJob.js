@@ -33,7 +33,7 @@ const restoreJobSchema = new mongoose.Schema(
     restoredCounts: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
     conflicts: { type: [mongoose.Schema.Types.Mixed], default: [] },
     warnings: { type: [String], default: [] },
-    errors: { type: [String], default: [] },
+    errorMessages: { type: [String], default: [] },
     sourceRestaurantId: { type: mongoose.Schema.Types.ObjectId, default: null },
     targetRestaurantId: { type: mongoose.Schema.Types.ObjectId, required: true },
     targetBranchId: { type: mongoose.Schema.Types.ObjectId, default: null },
