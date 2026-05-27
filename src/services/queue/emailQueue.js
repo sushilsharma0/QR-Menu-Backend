@@ -8,12 +8,17 @@ if (typeof dns.setDefaultResultOrder === 'function') {
   dns.setDefaultResultOrder('ipv4first');
 }
 
+function lookupIpv4Only(hostname, options, callback) {
+  return dns.lookup(hostname, { ...options, family: 4 }, callback);
+}
+
 if (SMTP_USER && SMTP_PASS) {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT || 587,
     secure: SMTP_SECURE || Number(SMTP_PORT) === 465,
     family: 4,
+    lookup: lookupIpv4Only,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
