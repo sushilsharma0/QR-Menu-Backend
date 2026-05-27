@@ -41,6 +41,7 @@ module.exports = {
   // Email
   SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
   SMTP_PORT: parseInt(process.env.SMTP_PORT) || 587,
+  SMTP_SECURE: String(process.env.SMTP_SECURE || '').toLowerCase() === 'true',
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
   // Leave empty to send "From" as SMTP_USER (required for Gmail / most consumer SMTP).
