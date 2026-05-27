@@ -9,7 +9,17 @@ if (typeof dns.setDefaultResultOrder === 'function') {
 }
 
 function lookupIpv4Only(hostname, options, callback) {
-  return dns.lookup(hostname, { ...options, family: 4 }, callback);
+  return dns.resolve4(hostname, (resolveError, addresses) => {
+    if (resolveError || !addresses?.length) {
+      return dns.lookup(hostname, { ...options, family: 4 }, callback);
+    }
+
+    if (options?.all) {
+      return callback(null, addresses.map((address) => ({ address, family: 4 })));
+    }
+
+    return callback(null, addresses[0], 4);
+  });
 }
 
 if (SMTP_USER && SMTP_PASS) {

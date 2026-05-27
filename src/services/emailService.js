@@ -205,7 +205,7 @@ const sendMail = async ({ to, subject, html, text }) => {
     logger.info(`Email sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    logger.error('Email send error:', error.message);
+    logger.error('Email send error: %s', error.stack || error.message);
     return { success: false, error: error.message };
   }
 };
