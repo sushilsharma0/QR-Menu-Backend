@@ -189,7 +189,7 @@ const generateTableQR = async (input, legacyTableNumber = null, baseUrl = null) 
         baseUrl,
       };
 
-  const url = options.baseUrl || CLIENT_URL || 'http://localhost:3000';
+  const url = options.baseUrl || CLIENT_URL || 'https://qr-menu-frontend-navy.vercel.app';
   const signed = options.restaurantId && options.tableId
     ? signCompactTableQrToken(options)
     : {
@@ -220,7 +220,7 @@ const generateTableQR = async (input, legacyTableNumber = null, baseUrl = null) 
 
 const generateOrderQR = async (orderId, orderNumber, baseUrl = null) => {
   const token = generateRandomToken(32);
-  const url = baseUrl || process.env.CLIENT_URL || 'http://localhost:3000';
+  const url = baseUrl || process.env.CLIENT_URL || 'https://qr-menu-frontend-navy.vercel.app';
   const qrData = `${url}/track-order/${token}`;
   
   const qrCode = await QRCode.toDataURL(qrData, {

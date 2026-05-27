@@ -10,9 +10,9 @@ const getConfig = () => ({
   publicKey: trimmed(process.env.KHALTI_PUBLIC_KEY),
   returnUrl: trimmed(
     process.env.KHALTI_RETURN_URL,
-    'http://localhost:3000/subscription/payment/khalti/callback',
+    'https://qr-menu-frontend-navy.vercel.app/subscription/payment/khalti/callback',
   ),
-  websiteUrl: trimmed(process.env.KHALTI_WEBSITE_URL, 'http://localhost:3000'),
+  websiteUrl: trimmed(process.env.KHALTI_WEBSITE_URL, 'https://qr-menu-frontend-navy.vercel.app'),
 });
 
 const toPaisa = (amount) => {

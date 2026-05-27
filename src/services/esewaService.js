@@ -22,11 +22,11 @@ const getConfig = () => ({
   ),
   successUrl: trimmed(
     process.env.ESEWA_SUCCESS_URL,
-    'http://localhost:3000/subscription/payment/esewa/success',
+    'https://qr-menu-frontend-navy.vercel.app/subscription/payment/esewa/success',
   ),
   failureUrl: trimmed(
     process.env.ESEWA_FAILURE_URL,
-    'http://localhost:3000/subscription/payment/esewa/failure',
+    'https://qr-menu-frontend-navy.vercel.app/subscription/payment/esewa/failure',
   ),
 });
 

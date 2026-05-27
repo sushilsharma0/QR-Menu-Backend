@@ -48,8 +48,8 @@ module.exports = {
   SMTP_FROM: process.env.SMTP_FROM || '',
   
   // URLs
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
-  ADMIN_URL: process.env.ADMIN_URL || 'http://localhost:3001',
+  CLIENT_URL: process.env.CLIENT_URL || 'https://qr-menu-frontend-navy.vercel.app',
+  ADMIN_URL: process.env.ADMIN_URL || 'https://qr-menu-frontend-navy.vercel.app',
   
   // File Upload
   UPLOAD_PATH: process.env.UPLOAD_PATH || './secure_uploads',
