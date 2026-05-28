@@ -27,7 +27,7 @@ if (SMTP_USER && SMTP_PASS) {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: SMTP_SECURE || SMTP_PORT === 465,
+    secure: true,
     family: 4,
     lookup: lookupIpv4Only,
     connectionTimeout: 10000,
