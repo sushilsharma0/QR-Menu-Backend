@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const dns = require('dns');
 
 const {
   SMTP_HOST,
@@ -15,50 +14,6 @@ let transporter = null;
 
 /*
 |--------------------------------------------------------------------------
-| FORCE IPV4
-|--------------------------------------------------------------------------
-| Render sometimes tries IPv6 first and Gmail SMTP rejects it.
-| This forces Node.js + Nodemailer to use IPv4 only.
-|--------------------------------------------------------------------------
-*/
-
-if (typeof dns.setDefaultResultOrder === 'function') {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
-function lookupIpv4Only(hostname, options, callback) {
-
-  dns.resolve4(hostname, (resolveError, addresses) => {
-
-    if (resolveError || !addresses || !addresses.length) {
-
-      return dns.lookup(
-        hostname,
-        {
-          ...options,
-          family: 4
-        },
-        callback
-      );
-    }
-
-    if (options && options.all) {
-
-      return callback(
-        null,
-        addresses.map((address) => ({
-          address,
-          family: 4
-        }))
-      );
-    }
-
-    return callback(null, addresses[0], 4);
-  });
-}
-
-/*
-|--------------------------------------------------------------------------
 | CREATE SMTP TRANSPORT
 |--------------------------------------------------------------------------
 */
@@ -71,53 +26,23 @@ if (SMTP_USER && SMTP_PASS) {
 
     port: Number(SMTP_PORT),
 
-    // 465 = true
-    // 587 = false
-    secure: Number(SMTP_PORT) === 465,
+    secure: false,
 
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS
     },
 
-    /*
-    |--------------------------------------------------------------------------
-    | FORCE IPV4
-    |--------------------------------------------------------------------------
-    */
-
-    family: 4,
-    lookup: lookupIpv4Only,
-
-    /*
-    |--------------------------------------------------------------------------
-    | TIMEOUTS
-    |--------------------------------------------------------------------------
-    */
-
     connectionTimeout: 30000,
     greetingTimeout: 30000,
     socketTimeout: 30000,
 
-    /*
-    |--------------------------------------------------------------------------
-    | TLS
-    |--------------------------------------------------------------------------
-    */
-
     tls: {
-      rejectUnauthorized: false,
-      family: 4
+      rejectUnauthorized: false
     }
   });
 
-  /*
-  |--------------------------------------------------------------------------
-  | VERIFY CONNECTION
-  |--------------------------------------------------------------------------
-  */
-
-  transporter.verify((error, success) => {
+  transporter.verify((error) => {
 
     if (error) {
 
@@ -135,13 +60,13 @@ if (SMTP_USER && SMTP_PASS) {
 } else {
 
   logger.warn(
-    '⚠️ Email not configured. Set SMTP_USER and SMTP_PASS in .env'
+    '⚠️ Email not configured. Set SMTP credentials'
   );
 }
 
 /*
 |--------------------------------------------------------------------------
-| SEND EMAIL FUNCTION
+| SEND EMAIL
 |--------------------------------------------------------------------------
 */
 
@@ -154,10 +79,6 @@ const sendEmail = async ({
 
   if (!transporter) {
 
-    logger.warn(
-      '⚠️ Email not sent - transporter not configured'
-    );
-
     return {
       success: false,
       error: 'Email transporter not configured'
@@ -168,9 +89,7 @@ const sendEmail = async ({
 
     const info = await transporter.sendMail({
 
-      from:
-        (SMTP_FROM && String(SMTP_FROM).trim()) ||
-        SMTP_USER,
+      from: SMTP_FROM,
 
       to,
 
@@ -186,7 +105,7 @@ const sendEmail = async ({
     });
 
     logger.info(
-      `✅ Email sent successfully to ${to}: ${info.messageId}`
+      `✅ Email sent to ${to}`
     );
 
     return {
