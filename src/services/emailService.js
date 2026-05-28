@@ -1,5 +1,5 @@
-const { transporter: smtpTransport } = require('../config/mailer');
-const { SMTP_FROM, APP_NAME, CLIENT_URL, SUPPORT_EMAIL, SMTP_USER, SMTP_PASS } = require('../config/env');
+const { sendEmail: sendProviderEmail } = require('../config/mailer');
+const { APP_NAME, CLIENT_URL, SUPPORT_EMAIL, BREVO_API_KEY, BREVO_SENDER_EMAIL } = require('../config/env');
 const { logger } = require('../utils/logger');
 
 const BRAND = {
@@ -13,7 +13,7 @@ const BRAND = {
   panel: '#ffffff',
 };
 
-const isEmailConfigured = () => Boolean(SMTP_USER && SMTP_PASS);
+const isEmailConfigured = () => Boolean(BREVO_API_KEY && BREVO_SENDER_EMAIL);
 
 const escapeHtml = (value = '') => String(value)
   .replace(/&/g, '&amp;')
@@ -182,30 +182,21 @@ const renderEmail = ({
 const sendMail = async ({ to, subject, html, text }) => {
   if (!isEmailConfigured()) {
     logger.warn(`[EMAIL DISABLED] Would send to ${to}: ${subject}`);
-    return { success: true, messageId: 'disabled' };
-  }
-
-  if (!smtpTransport) {
-    logger.error('[EMAIL] SMTP_USER/SMTP_PASS set but nodemailer transporter is missing');
-    return { success: false, error: 'Email transporter not initialized' };
+    return { success: false, error: 'Email provider not configured' };
   }
 
   try {
-    const fromAddress =
-      (SMTP_FROM && String(SMTP_FROM).trim())
-      || (SMTP_USER && String(SMTP_USER).trim())
-      || `noreply@${APP_NAME.toLowerCase().replace(/\s/g, '')}.com`;
-    const info = await smtpTransport.sendMail({
-      from: fromAddress,
-      to,
-      subject,
-      html,
-      text: text || plainTextFromHtml(html),
-    });
-    logger.info(`Email sent to ${to}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    const result = await sendProviderEmail({ to, subject, html, text });
+
+    if (!result.success) {
+      logger.error('Email send error: %s', result.error);
+      return { success: false, error: result.error };
+    }
+
+    logger.info(`Email sent to ${to}: ${result.messageId}`);
+    return result;
   } catch (error) {
-    logger.error('Email send error: %s', error.stack || error.message);
+    logger.error('Email send exception: %s', error.stack || error.message);
     return { success: false, error: error.message };
   }
 };

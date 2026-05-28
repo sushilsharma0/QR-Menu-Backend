@@ -46,6 +46,11 @@ module.exports = {
   SMTP_PASS: process.env.SMTP_PASS,
   // Leave empty to send "From" as SMTP_USER (required for Gmail / most consumer SMTP).
   SMTP_FROM: process.env.SMTP_FROM || '',
+
+  // Brevo / Sendinblue
+  BREVO_API_KEY: process.env.BREVO_API_KEY,
+  BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
+  BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME || process.env.APP_NAME || 'QR Menu SaaS',
   
   // URLs
   CLIENT_URL: process.env.CLIENT_URL || 'https://qr-menu-frontend-navy.vercel.app',

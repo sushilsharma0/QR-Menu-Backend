@@ -1,123 +1,60 @@
-const nodemailer = require('nodemailer');
-
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS,
-  SMTP_FROM
-} = require('./env');
-
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 const { logger } = require('../utils/logger');
 
-let transporter = null;
+const {
+  BREVO_API_KEY,
+  BREVO_SENDER_EMAIL,
+  BREVO_SENDER_NAME
+} = require('./env');
 
-/*
-|--------------------------------------------------------------------------
-| CREATE SMTP TRANSPORT
-|--------------------------------------------------------------------------
-*/
+/* ---------------------------
+   INIT BREVO CLIENT
+---------------------------- */
 
-if (SMTP_USER && SMTP_PASS) {
+const client = SibApiV3Sdk.ApiClient.instance;
+client.authentications['api-key'].apiKey = BREVO_API_KEY;
 
-  transporter = nodemailer.createTransport({
+const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-    host: SMTP_HOST,
+/* ---------------------------
+   SEND EMAIL FUNCTION
+---------------------------- */
 
-    port: Number(SMTP_PORT),
-
-    secure: true,
-
-    auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS
-    },
-
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
-
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-
-  transporter.verify((error) => {
-
-    if (error) {
-
-      logger.error(
-        '❌ Email transporter error: %s',
-        error.stack || error.message
-      );
-
-    } else {
-
-      logger.info('✅ Email transporter ready');
-    }
-  });
-
-} else {
-
-  logger.warn(
-    '⚠️ Email not configured. Set SMTP credentials'
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| SEND EMAIL
-|--------------------------------------------------------------------------
-*/
-
-const sendEmail = async ({
-  to,
-  subject,
-  html,
-  text
-}) => {
-
-  if (!transporter) {
-
+const sendEmail = async ({ to, subject, html, text }) => {
+  if (!BREVO_API_KEY) {
     return {
       success: false,
-      error: 'Email transporter not configured'
+      error: 'Brevo API key not configured'
     };
   }
 
   try {
-
-    const info = await transporter.sendMail({
-
-      from: SMTP_FROM,
-
-      to,
-
+    const response = await emailApi.sendTransacEmail({
+      sender: {
+        email: BREVO_SENDER_EMAIL,
+        name: BREVO_SENDER_NAME || 'QRRESTRONEPAL'
+      },
+      to: [
+        {
+          email: to
+        }
+      ],
       subject,
-
-      html,
-
-      text:
-        text ||
-        (html
-          ? html.replace(/<[^>]*>/g, '')
-          : '')
+      htmlContent: html,
+      textContent: text || (html ? html.replace(/<[^>]*>/g, '') : '')
     });
 
-    logger.info(
-      `✅ Email sent to ${to}`
-    );
+    logger.info(`✅ Email sent to ${to}`);
 
     return {
       success: true,
-      messageId: info.messageId
+      messageId: response.messageId
     };
 
   } catch (error) {
-
     logger.error(
-      '❌ Email send error: %s',
-      error.stack || error.message
+      '❌ Brevo API email error: %s',
+      error.response?.text || error.message
     );
 
     return {
@@ -128,6 +65,5 @@ const sendEmail = async ({
 };
 
 module.exports = {
-  transporter,
   sendEmail
 };
