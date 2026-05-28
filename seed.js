@@ -1,20 +1,25 @@
 require('dotenv').config();
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const connectDB = require('./src/config/database');
 const Platform = require('./src/models/platform/Platform');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/qr-menu-saas';
 const isProduction = process.env.NODE_ENV === 'production';
 
 function generateSeedPassword() {
   return crypto.randomBytes(18).toString('base64url');
 }
 
-async function seed() {
-  try {
-    await mongoose.connect(MONGODB_URI);
+async function seed({ reset = false, allowMissingCredentials = false } = {}) {
+  let ownsConnection = false;
 
-    if (process.argv.includes('--reset')) {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+      ownsConnection = true;
+    }
+
+    if (reset) {
       await Platform.deleteMany({});
       console.log('Cleared existing platform users');
     }
@@ -23,6 +28,10 @@ async function seed() {
     const seedPassword = process.env.SEED_SUPERADMIN_PASSWORD || (isProduction ? '' : generateSeedPassword());
 
     if (!seedEmail || !seedPassword) {
+      if (allowMissingCredentials) {
+        console.warn('Skipping seed: SEED_SUPERADMIN_EMAIL and SEED_SUPERADMIN_PASSWORD are not configured.');
+        return { skipped: true };
+      }
       throw new Error('Set SEED_SUPERADMIN_EMAIL and SEED_SUPERADMIN_PASSWORD before running the seed script.');
     }
 
@@ -34,7 +43,7 @@ async function seed() {
         email: seedEmail,
         password: seedPassword,
         role: 'super_admin',
-        isActive: true
+        isActive: true,
       });
       created = true;
       console.log('Super Admin created');
@@ -47,13 +56,25 @@ async function seed() {
     } else {
       console.log(`Login: ${seedEmail} / <configured password>`);
     }
+
+    return { skipped: false, created };
   } catch (error) {
     console.error('Seed failed:', error.message);
-    process.exitCode = 1;
+    if (!allowMissingCredentials) {
+      process.exitCode = 1;
+    }
+    throw error;
   } finally {
-    await mongoose.connection.close();
+    if (ownsConnection) {
+      await mongoose.connection.close();
+    }
   }
-  process.exit(process.exitCode ?? 0);
 }
 
-seed();
+if (require.main === module) {
+  seed({ reset: process.argv.includes('--reset') })
+    .then(() => process.exit(process.exitCode ?? 0))
+    .catch(() => process.exit(process.exitCode ?? 1));
+}
+
+module.exports = { seed };

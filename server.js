@@ -2,6 +2,7 @@ require('dotenv').config();
 const http = require('http');
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
+const { seed } = require('./seed');
 const { initSocket } = require('./src/services/socketService');
 const { setSocketIO } = require('./src/services/realtimeBroadcastService');
 const { logger } = require('./src/utils/logger');
@@ -18,20 +19,31 @@ const io = initSocket(server);
 setSocketIO(io);
 app.set('io', io);
 
-// Connect to Database
-connectDB();
-
 const { initRestoreQueue } = require('./src/queues/restoreQueue');
-initRestoreQueue().catch((err) => {
-  logger.warn('Restore queue init: %s', err.message);
-});
 
-// Start server
-server.listen(PORT, HOST, () => {
-  logger.info(`🚀 Server running on port ${PORT} (host ${HOST})`);
-  logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔌 WebSocket ready for real-time updates`);
-  logger.info(`📍 API URL: http://localhost:${PORT}/api`);
+const startServer = async () => {
+  await connectDB();
+  try {
+    await seed({ allowMissingCredentials: true });
+  } catch (err) {
+    logger.warn('Seed on start did not complete: %s', err.message);
+  }
+
+  initRestoreQueue().catch((err) => {
+    logger.warn('Restore queue init: %s', err.message);
+  });
+
+  server.listen(PORT, HOST, () => {
+    logger.info(`🚀 Server running on port ${PORT} (host ${HOST})`);
+    logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🔌 WebSocket ready for real-time updates`);
+    logger.info(`📍 API URL: http://localhost:${PORT}/api`);
+  });
+};
+
+startServer().catch((err) => {
+  logger.error('Startup failed:', err.stack || err.message);
+  process.exit(1);
 });
 
 // Graceful shutdown
