@@ -26,7 +26,7 @@ if (SMTP_USER && SMTP_PASS) {
 
     port: Number(SMTP_PORT),
 
-    secure: false,
+    secure: true,
 
     auth: {
       user: SMTP_USER,
