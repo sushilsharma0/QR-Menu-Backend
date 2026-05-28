@@ -1,6 +1,14 @@
 const nodemailer = require('nodemailer');
 const dns = require('dns');
-const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_SECURE } = require('./env');
+
+const {
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_USER,
+  SMTP_PASS,
+  SMTP_FROM
+} = require('./env');
+
 const { logger } = require('../utils/logger');
 
 let transporter = null;
@@ -16,7 +24,10 @@ function lookupIpv4Only(hostname, options, callback) {
     }
 
     if (options?.all) {
-      return callback(null, addresses.map((address) => ({ address, family: 4 })));
+      return callback(null, addresses.map((address) => ({
+        address,
+        family: 4
+      })));
     }
 
     return callback(null, addresses[0], 4);
@@ -24,50 +35,44 @@ function lookupIpv4Only(hostname, options, callback) {
 }
 
 if (SMTP_USER && SMTP_PASS) {
+
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: true,
+    port: Number(SMTP_PORT),
+
+    // IMPORTANT FIX
+    secure: Number(SMTP_PORT) === 465,
+
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS
+    },
+
     family: 4,
     lookup: lookupIpv4Only,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-    tls: { rejectUnauthorized: false }
+
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+
+    tls: {
+      rejectUnauthorized: false
+    }
   });
-  
-  transporter.verify((error, success) => {
+
+  transporter.verify((error) => {
     if (error) {
-      logger.error('❌ Email transporter error: %s', error.stack || error.message);
+      logger.error(
+        '❌ Email transporter error: %s',
+        error.stack || error.message
+      );
     } else {
       logger.info('✅ Email transporter ready');
     }
   });
+
 } else {
-  logger.warn('⚠️ Email not configured. Set SMTP_USER and SMTP_PASS in .env');
+  logger.warn(
+    '⚠️ Email not configured. Set SMTP_USER and SMTP_PASS'
+  );
 }
-
-const sendEmail = async ({ to, subject, html, text }) => {
-  if (!transporter) {
-    logger.warn('Email not sent - no transporter configured');
-    return { success: false, error: 'Email not configured' };
-  }
-  
-  try {
-    const info = await transporter.sendMail({
-      from: (SMTP_FROM && String(SMTP_FROM).trim()) || SMTP_USER,
-      to,
-      subject,
-      html,
-      text: text || html?.replace(/<[^>]*>/g, '')
-    });
-    logger.info(`Email sent to ${to}: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    logger.error('Email send error: %s', error.stack || error.message);
-    return { success: false, error: error.message };
-  }
-};
-
-module.exports = { sendEmail, transporter };
